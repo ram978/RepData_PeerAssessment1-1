@@ -1,25 +1,76 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+```{r}
+library(lattice)
+library(ggplot2)
+```
+## Load the data for the propossing
+```{r}
+getwd()
+setwd("/Users/janakiramsundaraneedi/Downloads")
+data <- read.csv("activity.csv")
+```
 
+##Turn the data date into valid date class
+```{r}
+dates <- strptime(data$date, "%Y-%m-%d")
+data$date <- dates
+```
+##keep all distinct days
+```{r}
+dates_unique <- unique(dates)
+```
 
-## Loading and preprocessing the data
+##Keep all the List of Possible Intervals
+```{r}
+unique_intervals <- unique(data$interval)
+```
+##Histogram of the total number of steps taken each day
+```{r}
+Steps_perday <- tapply(data$steps, dates$yday, FUN=sum, na.rm=TRUE)
+```
+##Plot the data and blue line gives Mean and green line median number of steps taken each day
+```{r}
+plot(dates_unique, Steps_perday, main="Histogram of steps taken each day", xlab="Date (October to November 2012)", ylab="Frequency", type="l", lwd=2, col="black")+abline(h = mean(Steps_perday), col = "blue", lwd = 3)+
+abline(h = median(Steps_perday), col = "green", lwd = 3)
+```
+##The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+which.max(data$steps)
+```
+##Code to describe and show a strategy for imputing missing data
+```{r}
+table(is.na(data))
+```
+na_value <-  which(is.na(data))
 
-
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
+##Fill in missing values using the average interval value across all days
+```{r}
+NA_value <-  which(is.na(data))
+Values_Impu<-Steps_perday[as.character(data[NA_value,3])]
+names(Values_Impu) <- NA_value
+for (i in NA_value) {
+    data$steps[i] = Values_Impu[as.character(i)]
+}
+sum(is.na(data))
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+wday_wend <- function(date) {
+    day <- weekdays(date)
+    if (day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+        return("weekday")
+    else if (day %in% c("Saturday", "Sunday"))
+        return("weekend")
+    else
+        stop("invalid date")
+}
+data$date <- as.Date(data$date)
+data$day <- sapply(data$date, FUN=wday_wend)
+
+averages <- aggregate(steps ~ interval + day, data=data, mean)
+ggplot(averages, aes(interval, steps)) + geom_line() + facet_grid(day ~ .) +
+    xlab("5-minute interval") + ylab("Number of steps")
+```
+
+
+
